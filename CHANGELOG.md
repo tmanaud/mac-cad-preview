@@ -9,6 +9,28 @@ and the patch version for everything else.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-04
+
+Published from the fork at <https://github.com/tmanaud/mac-cad-preview>.
+
+### Security
+
+* A 3MF file can no longer read or write outside the mesh buffers. Triangle
+  indices are checked against the vertex count, the zip reader checks every
+  size and offset, and inflating is capped instead of trusting the size the
+  file declares.
+* A malformed mesh, from a file or from the cache, shows an error instead of
+  crashing the preview, and OpenCASCADE exceptions no longer abort it.
+* Markdown previews keep only web and mail links clickable.
+* Archive listings fold very deep folder paths.
+* The Open in Fusion helper only opens an existing CAD file.
+
+### Changed
+
+* The README pictures are rendered from generated demo files by
+  `scripts/screenshots.sh`, in light and dark appearance.
+* `install.sh`, `doctor.sh` and the disk image point to this fork.
+
 ## [0.4.0] - 2026-08-23
 
 ### Added
@@ -120,7 +142,8 @@ First release.
 * No Finder icon thumbnails. The preview only appears on spacebar.
 * No OBJ, PLY or 3MF support.
 
-[Unreleased]: https://github.com/jbrewlet/mac-cad-preview/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/tmanaud/mac-cad-preview/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/tmanaud/mac-cad-preview/releases/tag/v0.4.1
 [0.4.0]: https://github.com/jbrewlet/mac-cad-preview/releases/tag/v0.4.0
 [0.3.0]: https://github.com/jbrewlet/mac-cad-preview/releases/tag/v0.3.0
 [0.2.0]: https://github.com/jbrewlet/mac-cad-preview/releases/tag/v0.2.0

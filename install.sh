@@ -13,7 +13,7 @@
 # quarantined.
 set -euo pipefail
 
-REPO="https://github.com/jbrewlet/mac-cad-preview.git"
+REPO="https://github.com/tmanaud/mac-cad-preview.git"
 APP_NAME="Mac CAD Preview.app"
 INSTALL_DIR="/Applications"
 BUNDLE_ID="com.maccadpreview.quicklook"

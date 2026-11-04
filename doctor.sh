@@ -56,7 +56,7 @@ find_app() {
         return
     fi
     bad "Mac CAD Preview is not in /Applications."
-    note "Install from https://github.com/jbrewlet/mac-cad-preview/releases/latest"
+    note "Install from https://github.com/tmanaud/mac-cad-preview/releases/latest"
 }
 
 check_machine() {

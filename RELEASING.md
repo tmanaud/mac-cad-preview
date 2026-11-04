@@ -77,7 +77,7 @@ version is never edited anywhere else.
    ```
 
 8. Publish the GitHub release at
-   <https://github.com/jbrewlet/mac-cad-preview/releases/new>, choosing the tag
+   <https://github.com/tmanaud/mac-cad-preview/releases/new>, choosing the tag
    just pushed and pasting that version's changelog section as the body. Attach
    `build/MacCADPreview-<version>.dmg` and quote its SHA-256 in the notes — with
    no Developer ID behind the app, that checksum is the only way someone can

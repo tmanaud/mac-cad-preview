@@ -61,7 +61,7 @@ cannot confirm who built it and asks you to confirm instead. Approving it once
 is also what allows the preview to load, so the spacebar will do nothing until
 step 3 is done.
 
-The source is at https://github.com/jbrewlet/mac-cad-preview if you would
+The source is at https://github.com/tmanaud/mac-cad-preview if you would
 rather build it yourself and skip all of this.
 EOF
 
