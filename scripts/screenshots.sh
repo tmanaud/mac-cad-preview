@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Renders the README pictures from generated demo files: the animation in
-# light and dark (docs/screenshots/demo-light.webp and demo-dark.webp), a
-# still of each for visitors who ask for reduced motion, and one screenshot
-# per kind of file. Nothing is captured from the screen and the renderer never
+# Renders the README pictures from generated demo files: the Quick Look
+# animation and the Finder preview column animation, each in light and dark
+# (docs/screenshots/demo-*.webp, finder-*.webp), a still of each for visitors
+# who ask for reduced motion, and one screenshot per kind of file. Nothing is captured from the screen and the renderer never
 # comes to the front; its settings and caches go to a throwaway home.
 # Needs Homebrew's opencascade and ffmpeg (built with libwebp, as Homebrew's is).
 set -euo pipefail
@@ -63,7 +63,7 @@ swiftc -O -target "$target" -module-name DemoRenderer -parse-as-library \
     "$tmp/bin/cadmesh.o" "$tmp/bin/read_3mf.o" "$tmp/bin/archivelist.o" \
     -L"$OCC/lib" "${OCC_LIBS[@]/#/-l}" -lc++ -lz -larchive -Xlinker -rpath -Xlinker "$OCC/lib" \
     -o "$tmp/bin/render" \
-    tools/demo/render.swift \
+    tools/demo/render.swift tools/demo/finder.swift \
     src/qlext/PreviewViewController.swift src/qlext/GCodeHighlighter.swift \
     src/qlext/MarkdownPreview.swift src/qlext/ArchivePreview.swift src/qlext/MeshData.swift \
     src/qlext/FusionOpener.swift src/qlext/FusionOpenButton.swift \
@@ -73,19 +73,23 @@ swiftc -O -target "$target" -module-name DemoRenderer -parse-as-library \
 for theme in light dark; do
     echo "Rendering ($theme):"
     mkdir "$tmp/home-$theme"
-    CFFIXED_USER_HOME="$tmp/home-$theme" "$tmp/bin/render" "$tmp/demo" "$tmp/$theme" "$theme"
-    frames="$tmp/$theme/frames"
-    # frame-0001.png to frame-NNNN.png, none missing: ffmpeg would stop at a gap.
-    count="$(find "$frames" -name 'frame-*.png' | wc -l | tr -d ' ')"
-    last="$(ls "$frames" | tail -1)"
-    [[ "$count" -gt 0 && "$last" == "$(printf 'frame-%04d.png' "$count")" ]] ||
-        die "frames are missing from the $theme recording"
-    ffmpeg -loglevel error -y -framerate 30 -i "$frames/frame-%04d.png" \
-        -vf "scale=$width:-1:flags=lanczos" -c:v libwebp_anim -q:v 80 -compression_level 6 \
-        -loop 0 -an "$tmp/ready/demo-$theme.webp"
-    sips -Z "$width" "$tmp/$theme/still.png" --out "$tmp/ready/demo-still-$theme.png" >/dev/null
-    echo "  demo-$theme.webp ($(du -h "$tmp/ready/demo-$theme.webp" | cut -f1 | tr -d ' '))"
-    echo "  demo-still-$theme.png"
+    CFFIXED_USER_HOME="$tmp/home-$theme" "$tmp/bin/render" "$tmp/demo" "$project" "$tmp/$theme" "$theme"
+    # animation <frames folder> <still> <name>
+    for spec in "frames still.png demo" "finder-frames finder-still.png finder"; do
+        read -r folder still name <<< "$spec"
+        frames="$tmp/$theme/$folder"
+        # frame-0001.png to frame-NNNN.png, none missing: ffmpeg would stop at a gap.
+        count="$(find "$frames" -name 'frame-*.png' | wc -l | tr -d ' ')"
+        last="$(ls "$frames" | tail -1)"
+        [[ "$count" -gt 0 && "$last" == "$(printf 'frame-%04d.png' "$count")" ]] ||
+            die "frames are missing from the $theme $name recording"
+        ffmpeg -loglevel error -y -framerate 30 -i "$frames/frame-%04d.png" \
+            -vf "scale=$width:-1:flags=lanczos" -c:v libwebp_anim -q:v 80 -compression_level 6 \
+            -loop 0 -an "$tmp/ready/$name-$theme.webp"
+        sips -Z "$width" "$tmp/$theme/$still" --out "$tmp/ready/$name-still-$theme.png" >/dev/null
+        echo "  $name-$theme.webp ($(du -h "$tmp/ready/$name-$theme.webp" | cut -f1 | tr -d ' '))"
+        echo "  $name-still-$theme.png"
+    done
 done
 
 echo "Screenshots:"

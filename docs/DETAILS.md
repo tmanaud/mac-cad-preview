@@ -142,7 +142,7 @@ For other problems, inspect the extension's system log:
 ## Known limitations
 
 - Apple Silicon only, on macOS 12 or later. Intel Macs are not supported.
-- No Finder icon thumbnails: previews appear when you press Space.
+- No Finder icon thumbnails. Previews appear in the Quick Look panel and the Finder's preview pane.
 - No gzip compressed STEP, OBJ or PLY support.
 - STL and basic 3MF previews do not show model colours.
 - G-code is text, not a toolpath simulation.

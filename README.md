@@ -1,6 +1,6 @@
 # Mac CAD Preview
 
-Press Space in the Finder to preview CAD models, G-code, Markdown and archives.
+Preview CAD models, G-code, Markdown and archives in the Finder: press Space, or just select them with the preview pane open.
 
 Apple Silicon · macOS 12 or later. A fork of [Justin Brouillette's original app](https://github.com/jbrewlet/mac-cad-preview).
 
@@ -11,7 +11,7 @@ Apple Silicon · macOS 12 or later. A fork of [Justin Brouillette's original app
   <img src="docs/screenshots/demo-light.webp" alt="Orbit a coloured STEP gear pump, switch model colours off and on, then preview an STL vase and a 3MF plate of planetary gears">
 </picture>
 
-The animation and screenshots are rendered from generated demo files by [`scripts/screenshots.sh`](scripts/screenshots.sh).
+The animations and screenshots are rendered from generated demo files by [`scripts/screenshots.sh`](scripts/screenshots.sh). The previews are the extension's own; the Quick Look and Finder windows around them are drawn.
 
 ## Download
 
@@ -41,6 +41,17 @@ Opening the app once registers the extension. You can then quit it.
 **Settings** opens the app's settings. **Fusion** opens STEP/IGES files in Autodesk Fusion when it is installed.
 **A− / A+** change text size; **Rendered / Source** switches the Markdown view.
 The first preview of a big model can take seconds; later previews are instant while the result is cached.
+
+## In the Finder
+
+Previews also appear in the Finder's preview pane (**View → Show Preview**), so you can browse models without pressing Space.
+
+<picture>
+  <source media="(prefers-reduced-motion: reduce) and (prefers-color-scheme: dark)" srcset="docs/screenshots/finder-still-dark.png">
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/screenshots/finder-still-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/finder-dark.webp">
+  <img src="docs/screenshots/finder-light.webp" alt="Finder in column view: selecting a STEP gear pump, an STL vase and a 3MF plate shows each one in 3D in the preview pane">
+</picture>
 
 ## Screenshots
 

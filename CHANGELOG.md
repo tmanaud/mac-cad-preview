@@ -28,7 +28,8 @@ Published from the fork at <https://github.com/tmanaud/mac-cad-preview>.
 ### Changed
 
 * The README pictures are rendered from generated demo files by
-  `scripts/screenshots.sh`, in light and dark appearance.
+  `scripts/screenshots.sh`, in light and dark appearance, including the
+  preview in the Finder's preview pane.
 * `install.sh`, `doctor.sh` and the disk image point to this fork.
 
 ## [0.4.0] - 2026-08-23

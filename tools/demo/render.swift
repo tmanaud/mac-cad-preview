@@ -10,17 +10,19 @@ import UniformTypeIdentifiers
 // never comes to the front, and settings and caches stay in the throwaway
 // home the script passes in CFFIXED_USER_HOME.
 //
-//   render <demo-folder> <output-folder> <light|dark>
+//   render <demo-folder> <project-folder> <output-folder> <light|dark>
 //
-// Writes frames/frame-NNNN.png (the animation), still.png (its first frame,
-// for reduced motion) and one <scene>.png screenshot per demo file.
+// Writes frames/frame-NNNN.png (the Quick Look animation), still.png (its
+// first frame, for reduced motion), one <scene>.png screenshot per demo file,
+// and finder-frames/ plus finder-still.png: the Finder's preview column
+// browsing the demo project (finder.swift).
 
 @main
 enum DemoRenderer {
     static func main() {
         let arguments = CommandLine.arguments
-        guard arguments.count == 4, let theme = Theme(rawValue: arguments[3]) else {
-            fail("usage: render <demo-folder> <output-folder> <light|dark>")
+        guard arguments.count == 5, let theme = Theme(rawValue: arguments[4]) else {
+            fail("usage: render <demo-folder> <project-folder> <output-folder> <light|dark>")
         }
         requireThrowawayHome()
 
@@ -29,7 +31,7 @@ enum DemoRenderer {
         app.appearance = theme.appearance
 
         let demo = URL(fileURLWithPath: arguments[1], isDirectory: true)
-        let studio = Studio(theme: theme, output: URL(fileURLWithPath: arguments[2], isDirectory: true))
+        let studio = Studio(theme: theme, output: URL(fileURLWithPath: arguments[3], isDirectory: true))
         studio.recordAnimation(step: demo.appendingPathComponent("gear-pump.step"),
                                stl: demo.appendingPathComponent("vase.stl"),
                                plate: demo.appendingPathComponent("planetary-set.3mf"))
@@ -39,6 +41,7 @@ enum DemoRenderer {
         for (name, file) in scenes {
             studio.screenshot(demo.appendingPathComponent(file), name: name)
         }
+        studio.recordFinder(project: URL(fileURLWithPath: arguments[2], isDirectory: true))
     }
 }
 
@@ -95,23 +98,26 @@ private struct Layer {
 
 final class Studio {
 
-    private let theme: Theme
-    private let output: URL
+    let theme: Theme
+    let output: URL
 
     /// The preview at the size Quick Look opens it (the controller's
     /// preferredContentSize), and the panel drawn around it.
-    private let content = NSSize(width: 1000, height: 750)
+    private let panel = NSSize(width: 1000, height: 750)
     private let titleBar: CGFloat = 40
     private let inset: CGFloat = 6
-    private let margin: CGFloat = 40
-    private let scale: CGFloat = 2
-    private let fps = 30
+    let margin: CGFloat = 40
+    let scale: CGFloat = 2
+
+    /// The size the next preview is laid out and rendered at.
+    var content = NSSize(width: 1000, height: 750)
+    var framesFolder = "frames"
+    var frameNumber = 0
 
     private let window: NSWindow
     private let renderer: SCNRenderer
     private var controller: PreviewViewController?
     private var title = ""
-    private var frameNumber = 0
 
     init(theme: Theme, output: URL) {
         self.theme = theme
@@ -132,7 +138,7 @@ final class Studio {
 
     private var windowRect: NSRect {
         NSRect(x: margin, y: margin,
-               width: content.width + 2 * inset, height: content.height + titleBar + inset)
+               width: panel.width + 2 * inset, height: panel.height + titleBar + inset)
     }
 
     private var canvas: NSSize {
@@ -140,7 +146,7 @@ final class Studio {
     }
 
     private var well: NSRect {
-        NSRect(x: margin + inset, y: margin + inset, width: content.width, height: content.height)
+        NSRect(x: margin + inset, y: margin + inset, width: panel.width, height: panel.height)
     }
 
     // MARK: - Scenes
@@ -239,25 +245,28 @@ final class Studio {
         }
     }
 
-    private func emit(_ image: CGImage) {
+    func emit(_ image: CGImage) {
         frameNumber += 1
         let name = String(format: "frame-%04d.png", frameNumber)
-        writePNG(image, to: output.appendingPathComponent("frames").appendingPathComponent(name))
+        writePNG(image, to: output.appendingPathComponent(framesFolder).appendingPathComponent(name))
     }
 
-    private func ease(_ t: CGFloat) -> CGFloat {
+    func ease(_ t: CGFloat) -> CGFloat {
         t * t * (3 - 2 * t)
     }
 
-    private func mix(_ a: NSPoint, _ b: NSPoint, _ t: CGFloat) -> NSPoint {
+    func mix(_ a: NSPoint, _ b: NSPoint, _ t: CGFloat) -> NSPoint {
         NSPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
     }
 
     // MARK: - Preview
 
-    private func open(_ url: URL) {
+    func open(_ url: URL, background: NSColor = .windowBackgroundColor) {
         let controller = PreviewViewController()
         let view = controller.view
+        // The window takes the controller's preferred size, as a Quick Look
+        // panel does. Elsewhere (the Finder's preview column) the host sets it.
+        controller.preferredContentSize = content
         view.frame = NSRect(origin: .zero, size: content)
         window.contentView = view
         window.setContentSize(content)
@@ -281,12 +290,12 @@ final class Studio {
         for button in descendants(FusionOpenButton.self, of: view) { button.isHidden = true }
         view.layoutSubtreeIfNeeded()
 
-        // The panel shows through the clear 3D view; render that colour too,
-        // so the model is drawn on exactly the well it sits in.
+        // What is behind the clear 3D view shows through it; render that
+        // colour too, so the model is drawn on exactly what it sits on.
         if let scene = sceneView?.scene {
-            var colour = NSColor.windowBackgroundColor
+            var colour = background
             theme.appearance.performAsCurrentDrawingAppearance {
-                colour = NSColor.windowBackgroundColor.usingColorSpace(.sRGB) ?? colour
+                colour = background.usingColorSpace(.sRGB) ?? colour
             }
             scene.background.contents = colour
         }
@@ -336,7 +345,7 @@ final class Studio {
     // MARK: - Drawing
 
     /// The preview at its own size: the 3D model, then the overlay controls.
-    private func contentImage() -> CGImage {
+    func contentImage() -> CGImage {
         let width = Int(content.width * scale), height = Int(content.height * scale)
         let context = bitmap(width: width, height: height)
         let full = CGRect(x: 0, y: 0, width: width, height: height)
@@ -395,7 +404,10 @@ final class Studio {
             border.lineWidth = 1
             NSColor.separatorColor.setStroke()
             border.stroke()
-            if let pointer { drawPointer(pointer) }
+            if let pointer {
+                drawPointer(at: NSPoint(x: well.minX + pointer.at.x, y: well.minY + pointer.at.y),
+                            pressed: pointer.pressed)
+            }
         }
         NSGraphicsContext.restoreGraphicsState()
         guard let image = context.makeImage() else { fail("could not draw a frame") }
@@ -433,9 +445,10 @@ final class Studio {
         string.draw(at: NSPoint(x: windowRect.minX + 60, y: middle - string.size().height / 2))
     }
 
-    private func drawSymbol(_ name: String, centre: NSPoint) {
-        let configuration = NSImage.SymbolConfiguration(pointSize: 15, weight: .regular)
-            .applying(NSImage.SymbolConfiguration(paletteColors: [.secondaryLabelColor]))
+    func drawSymbol(_ name: String, centre: NSPoint, size points: CGFloat = 15,
+                    colour: NSColor = .secondaryLabelColor) {
+        let configuration = NSImage.SymbolConfiguration(pointSize: points, weight: .regular)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [colour]))
         guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(configuration) else { return }
         let size = image.size
@@ -443,9 +456,9 @@ final class Studio {
                               width: size.width, height: size.height))
     }
 
-    private func drawPointer(_ pointer: Pointer) {
-        let point = NSPoint(x: well.minX + pointer.at.x, y: well.minY + pointer.at.y)
-        if pointer.pressed {
+    /// The arrow pointer, with a press ring while the button is down.
+    func drawPointer(at point: NSPoint, pressed: Bool) {
+        if pressed {
             NSColor.systemBlue.withAlphaComponent(0.28).setFill()
             NSBezierPath(ovalIn: NSRect(x: point.x - 12, y: point.y - 12, width: 24, height: 24)).fill()
         }
@@ -456,7 +469,7 @@ final class Studio {
                                     width: size.width, height: size.height))
     }
 
-    private func bitmap(width: Int, height: Int) -> CGContext {
+    func bitmap(width: Int, height: Int) -> CGContext {
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
               let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
                                       bytesPerRow: 0, space: space,
@@ -465,7 +478,7 @@ final class Studio {
         return context
     }
 
-    private func writePNG(_ image: CGImage, to url: URL) {
+    func writePNG(_ image: CGImage, to url: URL) {
         guard let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString,
                                                                 1, nil) else {
             fail("cannot write \(url.lastPathComponent)")
